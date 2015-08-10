@@ -1,44 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extension version="3.0" type="plugin" method="upgrade" group="z2">
-    <name>plg_z2_sp_seach</name>
-    <author>zoearth.moon@plusdi.com</author>
-    <creationDate>2015-05-27</creationDate>
-    <copyright>Copyright (c)</copyright>
-    <authorEmail>zoearth.moon@plusdi.com</authorEmail>
-    <authorUrl></authorUrl>
-    <version>1.1.6</version>
+<extension version="3.1" type="plugin" group="system" method="upgrade">
+    <name>plg_z2_get_found</name>
+    <author>zoearthmoon@gmail.com</author>
+    <creationDate>2015-08-10</creationDate>
+    <copyright>Copyright (C)</copyright>
+    <authorEmail>zoearthmoon@gmail.com</authorEmail>
+    <authorUrl>http://www.zoearthmoon.net/</authorUrl>
+    <version>1.0.0</version>
     <description>
     <![CDATA[
     <div style="text-align:left">
         <blockquote>
-        <p>您好!這是Z2 的購物車-[特殊搜尋]外掛</p>
+        <p>您好!這是配合Z2的抓取基金外掛</p>
         </blockquote>
-        <dl class="dl-horizontal">
-        <dt>1.0.5版本</dt><dd>配合非沛麗網站的修改，改為通用性外掛</dd>
-        <dt>1.0.0版本</dt><dd>[搜尋多附加欄位.多分類指定.允許前台排序與修改每次顯示數量.未指定則帶出所有產品分類底下產品]</dd>
-        </dl>
     </div>
     ]]>
-	</description>
+    </description>
     <files>
-        <filename plugin="z2_sp_seach">z2_sp_seach.php</filename>
-        <filename>z2_sp_seach.js</filename>
+        <filename plugin="z2_get_found">z2_get_found.php</filename>
     </files>
-    <config>
+	<config>
         <fields name="params" >
             <fieldset name="basic" addfieldpath="/administrator/components/com_z2/elements/" >
-            
-                <field name="ptExtId_1" type="z2extendfield" default="" label="過濾附加欄位1:別名eIs" />
-                <field name="ptExtId_2" type="z2extendfield" default="" label="過濾附加欄位2:別名fIs" />
-                <field name="ptExtId_3" type="z2extendfield" default="" label="過濾附加欄位3:別名gIs" />
-                
-                <field name="defLi" type="text" default="" label="預設limit" />
-                
-                <field name="useLi" type="list" default="1" label="允許修改limit" >
-                    <option value="0">JNO</option>
-                    <option value="1">JYES</option>
-                </field>
+                <field name="getEmail" type="email" default="" label="收信email" />
+                <field name="foundCat" type="z2category" default="" label="指定基金分類" />
             </fieldset>
         </fields>
-    </config>
+	</config>
 </extension>
