@@ -146,7 +146,33 @@ class plgZ2Z2_Get_Found extends JPlugin
             //解析資料
             if ($pregRule == '1')
             {
-                .....
+                $url ='http://www.stockq.org/funds/fund/franklin/FT501.php';
+                $header = array("Accept: text/html,application/xhtml+xml");
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+                curl_setopt($ch, CURLOPT_ENCODING, "gzip");
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.0.3705; .NET CLR 1.1.4322)');
+                $html = curl_exec($ch);
+
+                $html = str_replace("\r","",$html);
+                $html = str_replace("\n","",$html);
+                $html = str_replace('> ','>',$html);
+                $html = str_replace('< ','<',$html);
+                $html = explode('<table class="fundpagetable">',$html);
+                $html = $html[2];
+                $html = explode('</table>',$html);
+                $html = $html[0];
+
+
+                //取得基金列表
+                preg_match_all('/([0-9]{4}\/[0-9]{2}\/[0-9]{2})/',$html,$match);
+                print_r($match);
+
+                preg_match_all('/\>([0-9\.\-]{1,})\</',$html,$match);
+                print_r($match);
             }
             
             //比對資料(新增者必須取得漲跌)(舊的比對有修改再更新寫入)
