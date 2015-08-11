@@ -24,6 +24,7 @@
             <fieldset name="basic" addfieldpath="/administrator/components/com_z2/elements/" >
                 <field name="getEmail" type="email" default="" label="收信email" />
                 <field name="foundCat" type="z2category" default="" label="指定基金分類" />
+                <field name="installSql" type="text" default="0" label="installSql" />
             </fieldset>
         </fields>
 	</config>
