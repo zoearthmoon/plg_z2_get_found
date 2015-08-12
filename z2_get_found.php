@@ -56,6 +56,8 @@ class plgZ2Z2_Get_Found extends JPlugin
     
     function onAfterInitialise()
     {
+        date_default_timezone_set('Asia/Taipei');
+        
         //是否啟用
         if (!(JRequest::getInt('getZoeFoundGo') == '1'))
         {
@@ -91,7 +93,9 @@ class plgZ2Z2_Get_Found extends JPlugin
         //檢查項目的附加欄位是否有與有填寫
         //foundKey:基金代碼(必須檢查不重複)
         //foundUrl:基金網址
-        //foundBuy:基金買價(自己買的價格)
+        //foundBuy:基金目標買價(判斷標準)
+        //foundMax:漲價提醒點
+        //foundMin:跌價提醒點
         //pregRule:正規化規則(沒設定則使用預設)
         
         //迴圈
@@ -99,12 +103,13 @@ class plgZ2Z2_Get_Found extends JPlugin
         $db = Z2HelperQueryData::getDB();
         
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Accept: application/json"));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Accept: text/html,application/xhtml+xml"));
         curl_setopt($ch, CURLOPT_ENCODING, "gzip");
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.0.3705; .NET CLR 1.1.4322)');
         
+        $eHtml = '';//信件內容
         foreach ($foundDatas as $item)
         {
             if (!(isset($item['extra_fields']['foundKey']) && $item['extra_fields']['foundKey'] != ''))
@@ -120,6 +125,12 @@ class plgZ2Z2_Get_Found extends JPlugin
             $foundKey = $item['extra_fields']['foundKey'];
             $foundUrl = $item['extra_fields']['foundUrl'];
             $foundBuy = isset($item['extra_fields']['foundBuy']) ? (double)$item['extra_fields']['foundBuy']:0;
+            
+            $foundMax = isset($item['extra_fields']['foundMax']) ? (double)$item['extra_fields']['foundMax']:0;//預設10%
+            $foundMin = isset($item['extra_fields']['foundMin']) ? (double)$item['extra_fields']['foundMin']:0;//預設10%
+            $foundMax = $foundMax == 0 ? $foundMax:10;
+            $foundMin = $foundMin == 0 ? $foundMin:10;
+            
             $pregRule = isset($item['extra_fields']['pregRule']) ? $item['extra_fields']['pregRule']:1;
             $pregRule = in_array($pregRule,array(1,2,3)) ? $pregRule:1;
             
@@ -135,7 +146,8 @@ class plgZ2Z2_Get_Found extends JPlugin
             $nowFData = array();
             foreach ($rows as $row)
             {
-                $nowFData[$row->dateKey] = $row->cost;
+                $nowFData[$row->dateKey]['cost']   = $row->cost;
+                $nowFData[$row->dateKey]['change'] = $row->change;
             }
             
             //取得資料
@@ -146,62 +158,121 @@ class plgZ2Z2_Get_Found extends JPlugin
             //解析資料
             if ($pregRule == '1')
             {
-                $url ='http://www.stockq.org/funds/fund/franklin/FT501.php';
-                $header = array("Accept: text/html,application/xhtml+xml");
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-                curl_setopt($ch, CURLOPT_ENCODING, "gzip");
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-                curl_setopt($ch, CURLOPT_URL, $url);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.0.3705; .NET CLR 1.1.4322)');
-                $html = curl_exec($ch);
-
                 $html = str_replace("\r","",$html);
                 $html = str_replace("\n","",$html);
                 $html = str_replace('> ','>',$html);
                 $html = str_replace('< ','<',$html);
+                
+                if (!strpos($html,'<font color=#FFFFFF>淨值</font></td><td align=center nowrap=nowrap><font color=#FFFFFF>漲跌比例</font>'))
+                {
+                    $msg = 'ERROR 156 HTML有誤';
+                    $this->sendEmail($msg,TRUE);exit();
+                }
+                
                 $html = explode('<table class="fundpagetable">',$html);
                 $html = $html[2];
                 $html = explode('</table>',$html);
                 $html = $html[0];
-
-
+                
                 //取得基金列表
                 preg_match_all('/([0-9]{4}\/[0-9]{2}\/[0-9]{2})/',$html,$match);
-                print_r($match);
+                $years = $match[1];
 
                 preg_match_all('/\>([0-9\.\-]{1,})\</',$html,$match);
-                print_r($match);
+                $nums  = $match[1];
+                
+                if (count($years) != (count($nums)*2))
+                {
+                    $msg = 'ERROR 167 年份數值數量錯誤:'.$foundUrl;
+                    $this->sendEmail($msg,TRUE);exit();
+                }
+                
+                foreach ($years as $key=>$year)
+                {
+                    $year = str_replace('/','-',$year);
+                    $newFData[$year]['cost']   = $nums[($key*2)];//淨值
+                    $newFData[$year]['change'] = $nums[($key*2)+1];//漲跌
+                }
+            }
+            
+            //是否有今天價格
+            if (!isset($newFData[date("Y-m-d")]))
+            {
+                continue;
             }
             
             //比對資料(新增者必須取得漲跌)(舊的比對有修改再更新寫入)
-            //整理資料進入html
+            foreach ($newFData as $year=>$v)
+            {
+                $reNewAdd = FALSE;
+                //比對
+                if (isset($nowFData[$year]))
+                {
+                    if ($nowFData[$year]['cost'] != $newFData[$year]['cost'] || $nowFData[$year]['change'] != $newFData[$year]['change'] )
+                    {
+                        $reNewAdd = TRUE;
+                    }
+                }
+                else
+                {
+                    $reNewAdd = TRUE;
+                }
+                
+                //需要更新
+                if ($reNewAdd)
+                {
+                    //刪除舊的
+                    $query = $db->getQuery(true);
+                    $query->delete('#__z2_found_data')
+                        ->where('foundKey = '.$db->quote($foundKey))
+                        ->where('dateKey = '.$db->quote($year));
+                    $db->setQuery($query);
+                    $db->execute();
+                    
+                    //寫入新的
+                    $fdata = array(
+                            'foundKey' => $foundKey,//基金代碼
+                            'cost'     => $newFData[$year]['cost'],//淨值
+                            'change'   => $newFData[$year]['change'],//漲跌
+                            'dateKey'  => $year,//日期
+                            'idate'    => date('Y-m-d H:i:s'),
+                            );
+                    $fdata = (object)$fdata;
+                    $db->insertObject('#__z2_found_data',$fdata);
+                }
+            }
             
+            //整理資料進入html
+            //是否達到寄信條件(漲跌達到目標)
+            $todayCost = $newFData[date("Y-m-d")]['cost'];
+            $todayChange = (($todayCost - $foundBuy)/$foundBuy)*100;
+            if ($todayChange >= $foundMax || $todayChange <= (0 - $foundMin) )
+            {
+                $eHtml .= '<tr>';
+                $eHtml .= '<td>'.$item['name'].'</td>';
+                $eHtml .= '<td>'.date("Y-m-d").'</td>';
+                $eHtml .= '<td>'.$foundBuy.'</td>';
+                $eHtml .= '<td>'.$todayCost.'</td>';
+                if ($todayChange > 0 )
+                {
+                    $eHtml .= '<td color="#CC0000" ><h2>↑'.$todayChange.' % </h2></td>';
+                }
+                else
+                {
+                    $eHtml .= '<td color="#009933" ><h2>↓'.$todayChange.' % </h2></td>';
+                }
+                $eHtml .= '</tr>';
+            }
         }
         //迴圈結束
         curl_close($ch);
         
-        //寄信....
-        
-        
-        
-        
-        
-        /*
-        $url ='http://www.stockq.org/funds/franklin.php';
-        $header = array("Accept: application/json");
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-        curl_setopt($ch, CURLOPT_ENCODING, "gzip");
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.0.3705; .NET CLR 1.1.4322)');
-
-        $retValue = curl_exec($ch);
-        $response = json_decode(curl_exec($ch));
-        */
+        //寄信
+        if ($eHtml != '' )
+        {
+            $eHtml = '<table border="1" style="width:100%"><tr><td>基金</td><td>日期</td><td>目標</td><td>目前</td><td>漲跌</td></tr>'.$eHtml.'</table>';
+            $this->sendEmail($eHtml);
+        }
     }
     
     protected function sendEmail($html,$isError=FALSE)
