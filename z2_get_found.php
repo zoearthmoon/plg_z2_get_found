@@ -2,7 +2,7 @@
 defined('_JEXEC') or die ;
 jimport('joomla.plugin.plugin');
 
-class plgZ2Z2_Get_Found extends JPlugin
+class plgSystemZ2_Get_Found extends JPlugin
 {
     //20150612 zoearth 設定DB(新增需要的表單)
     var $nowDBKey = 1;
@@ -54,12 +54,12 @@ class plgZ2Z2_Get_Found extends JPlugin
         $db->execute();
     }
     
-    function onAfterInitialise()
+    function onAfterDispatch()
     {
         date_default_timezone_set('Asia/Taipei');
         
         //是否啟用
-        if (!(JRequest::getInt('getZoeFoundGo') == '1'))
+        if (!(JRequest::getInt('getZoeFoundGo') == 1))
         {
             return FALSE;
         }
@@ -76,7 +76,7 @@ class plgZ2Z2_Get_Found extends JPlugin
         }
         
         //檢查設定分類
-        if (is_array($foundCat) && count($foundCat) > 0 )
+        if (!(is_array($foundCat) && count($foundCat) > 0 ))
         {
             $msg = 'ERROR 028 分類錯誤';
             $this->sendEmail($msg,TRUE);exit();
@@ -128,8 +128,8 @@ class plgZ2Z2_Get_Found extends JPlugin
             
             $foundMax = isset($item['extra_fields']['foundMax']) ? (double)$item['extra_fields']['foundMax']:0;//預設10%
             $foundMin = isset($item['extra_fields']['foundMin']) ? (double)$item['extra_fields']['foundMin']:0;//預設10%
-            $foundMax = $foundMax == 0 ? $foundMax:10;
-            $foundMin = $foundMin == 0 ? $foundMin:10;
+            $foundMax = $foundMax != 0 ? $foundMax:10;
+            $foundMin = $foundMin != 0 ? $foundMin:10;
             
             $pregRule = isset($item['extra_fields']['pregRule']) ? $item['extra_fields']['pregRule']:1;
             $pregRule = in_array($pregRule,array(1,2,3)) ? $pregRule:1;
@@ -149,11 +149,11 @@ class plgZ2Z2_Get_Found extends JPlugin
                 $nowFData[$row->dateKey]['cost']   = $row->cost;
                 $nowFData[$row->dateKey]['change'] = $row->change;
             }
-            
+
             //取得資料
             curl_setopt($ch, CURLOPT_URL, $foundUrl);
             $html = curl_exec($ch);
-            
+
             $newFData = array();
             //解析資料
             if ($pregRule == '1')
@@ -181,12 +181,12 @@ class plgZ2Z2_Get_Found extends JPlugin
                 preg_match_all('/\>([0-9\.\-]{1,})\</',$html,$match);
                 $nums  = $match[1];
                 
-                if (count($years) != (count($nums)*2))
+                if ((count($years)*2) != count($nums) )
                 {
-                    $msg = 'ERROR 167 年份數值數量錯誤:'.$foundUrl;
+                    $msg = 'ERROR 167 年份數值數量錯誤:'.count($years).' *2 != '.count($nums).' @ '.$foundUrl;
                     $this->sendEmail($msg,TRUE);exit();
                 }
-                
+				
                 foreach ($years as $key=>$year)
                 {
                     $year = str_replace('/','-',$year);
@@ -195,12 +195,15 @@ class plgZ2Z2_Get_Found extends JPlugin
                 }
             }
             
+			//$today = date("Y-m-d");
+			$today = '2015-08-13';
+			
             //是否有今天價格
-            if (!isset($newFData[date("Y-m-d")]))
+            if (!isset($newFData[$today]))
             {
                 continue;
             }
-            
+			
             //比對資料(新增者必須取得漲跌)(舊的比對有修改再更新寫入)
             foreach ($newFData as $year=>$v)
             {
@@ -241,16 +244,17 @@ class plgZ2Z2_Get_Found extends JPlugin
                     $db->insertObject('#__z2_found_data',$fdata);
                 }
             }
-            
+			
             //整理資料進入html
             //是否達到寄信條件(漲跌達到目標)
-            $todayCost = $newFData[date("Y-m-d")]['cost'];
+            $todayCost = $newFData[$today]['cost'];
             $todayChange = (($todayCost - $foundBuy)/$foundBuy)*100;
+			
             if ($todayChange >= $foundMax || $todayChange <= (0 - $foundMin) )
             {
                 $eHtml .= '<tr>';
                 $eHtml .= '<td>'.$item['name'].'</td>';
-                $eHtml .= '<td>'.date("Y-m-d").'</td>';
+                $eHtml .= '<td>'.$today.'</td>';
                 $eHtml .= '<td>'.$foundBuy.'</td>';
                 $eHtml .= '<td>'.$todayCost.'</td>';
                 if ($todayChange > 0 )
@@ -261,6 +265,7 @@ class plgZ2Z2_Get_Found extends JPlugin
                 {
                     $eHtml .= '<td color="#009933" ><h2>↓'.$todayChange.' % </h2></td>';
                 }
+				$eHtml .= '<td>漲'.$foundMax.'%/跌'.$foundMin.'%</td>';
                 $eHtml .= '</tr>';
             }
         }
@@ -270,9 +275,14 @@ class plgZ2Z2_Get_Found extends JPlugin
         //寄信
         if ($eHtml != '' )
         {
-            $eHtml = '<table border="1" style="width:100%"><tr><td>基金</td><td>日期</td><td>目標</td><td>目前</td><td>漲跌</td></tr>'.$eHtml.'</table>';
+            $eHtml = '<table border="1" style="width:100%"><tr>
+			<td>基金</td><td>日期</td>
+			<td>目標</td><td>目前</td><td>漲跌</td><td>目標漲跌</td></tr>'.$eHtml.'</table>';
             $this->sendEmail($eHtml);
+			echo $eHtml;
         }
+		
+		exit();
     }
     
     protected function sendEmail($html,$isError=FALSE)
