@@ -57,6 +57,7 @@ class plgSystemZ2_Get_Found extends JPlugin
     function onAfterDispatch()
     {
         date_default_timezone_set('Asia/Taipei');
+        set_time_limit(500);
         
         //是否啟用
         if (!(JRequest::getInt('getZoeFoundGo') == 1))
@@ -152,8 +153,25 @@ class plgSystemZ2_Get_Found extends JPlugin
 
             //取得資料
             curl_setopt($ch, CURLOPT_URL, $foundUrl);
-            $html = curl_exec($ch);
-
+            $html       = curl_exec($ch);
+            $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            
+            //20150818 zoearth 錯誤處理
+            $cc = 0;
+            while (in_array($httpStatus,array(500,503)) && $cc <= 5 )
+            {
+                $cc++;
+                sleep(3);
+                $html       = curl_exec($ch);
+                $httpStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            }
+            
+            if (in_array($httpStatus,array(500,503)))
+            {
+                    $msg = 'ERROR 173 CURL錯誤:'.$foundUrl;
+                    $this->sendEmail($msg,TRUE);exit();
+            }
+            
             $newFData = array();
             //解析資料
             if ($pregRule == '1')
@@ -195,15 +213,17 @@ class plgSystemZ2_Get_Found extends JPlugin
                 }
             }
             
-			$today = date("Y-m-d");
-			//$today = '2015-08-13';
-			
-            //是否有今天價格
-            if (!isset($newFData[$today]))
+            if (!(is_array($newFData) && count($newFData) > 0 ))
             {
-                continue;
+                    $msg = 'ERROR 218 找不到資料newFData:'.$foundUrl;
+                    $this->sendEmail($msg,TRUE);exit();
             }
-			
+            
+			//$today = date("Y-m-d");
+            //20150818 zoearth 最近一天有價格
+            ksort($newFData);
+            $today = key(array_slice($newFData,-1,1,TRUE));
+            
             //比對資料(新增者必須取得漲跌)(舊的比對有修改再更新寫入)
             foreach ($newFData as $year=>$v)
             {
@@ -253,7 +273,7 @@ class plgSystemZ2_Get_Found extends JPlugin
             if ($todayChange >= $foundMax || $todayChange <= (0 - $foundMin) )
             {
                 $eHtml .= '<tr>';
-                $eHtml .= '<td>'.$item['name'].'</td>';
+                $eHtml .= '<td><a href="'.$foundUrl.'" target="_blank">'.$item['name'].'</a></td>';
                 $eHtml .= '<td>'.$today.'</td>';
                 $eHtml .= '<td>'.$foundBuy.'</td>';
                 $eHtml .= '<td>'.$todayCost.'</td>';
@@ -286,8 +306,6 @@ class plgSystemZ2_Get_Found extends JPlugin
                 max=10&(可能不用?)
                 agent=hohli.com(可能不用?)
                 */
-                
-                //20150818 zoearth 最好再補上資料網址
                 
                 //最好禮拜5當天一定會寄送報表
                 
