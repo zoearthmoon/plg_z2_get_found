@@ -195,8 +195,8 @@ class plgSystemZ2_Get_Found extends JPlugin
                 }
             }
             
-			//$today = date("Y-m-d");
-			$today = '2015-08-13';
+			$today = date("Y-m-d");
+			//$today = '2015-08-13';
 			
             //是否有今天價格
             if (!isset($newFData[$today]))
@@ -267,6 +267,30 @@ class plgSystemZ2_Get_Found extends JPlugin
                 }
 				$eHtml .= '<td>漲'.$foundMax.'%/跌'.$foundMin.'%</td>';
                 $eHtml .= '</tr>';
+                
+                //20150818 zoearth 新增圖表
+                /*
+                http://chart.apis.google.com/chart?
+                cht=ls&
+                chs=160x160&
+                chd=s:GMSYfA(線樣式)&
+                chdl=RR(名稱)&
+                chco=5131C9(線顏色)&
+                chxt=x,y&
+                chxl=0:|2015-08-15|2015-08-16|2015-08-17|1:|-10|-5|0|5|10&(橫線與直線的單位標示)
+                chxs=0,000000,8,-1|1,000000,8,-1&(橫線直線的位置)
+                chf=bg,s,FFFFFF|c,s,FFFFFF&(背景顏色.外面與裡面)
+                chg=10,10,5,2,0,0&
+                chtt=100&(上方標題)
+                chts=000000,12&(上方標題位置與大小)
+                max=10&(可能不用?)
+                agent=hohli.com(可能不用?)
+                */
+                
+                //20150818 zoearth 最好再補上資料網址
+                
+                //最好禮拜5當天一定會寄送報表
+                
             }
         }
         //迴圈結束
