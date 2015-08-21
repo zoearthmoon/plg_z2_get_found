@@ -279,11 +279,11 @@ class plgSystemZ2_Get_Found extends JPlugin
                 $eHtml .= '<td>'.$todayCost.'</td>';
                 if ($todayChange > 0 )
                 {
-                    $eHtml .= '<td color="#CC0000" ><h2>↑'.$todayChange.' % </h2></td>';
+                    $eHtml .= '<td color="#CC0000" ><h2>↑'.number_format($todayChange, 2,'.','').' % </h2></td>';
                 }
                 else
                 {
-                    $eHtml .= '<td color="#009933" ><h2>↓'.$todayChange.' % </h2></td>';
+                    $eHtml .= '<td color="#009933" ><h2>↓'.number_format($todayChange, 2,'.','').' % </h2></td>';
                 }
 				$eHtml .= '<td>漲'.$foundMax.'%/跌'.$foundMin.'%</td>';
                 $eHtml .= '</tr>';
@@ -323,7 +323,7 @@ class plgSystemZ2_Get_Found extends JPlugin
             $this->sendEmail($eHtml);
 			echo $eHtml;
         }
-		
+		echo 'DONE!(:D)';
 		exit();
     }
     
