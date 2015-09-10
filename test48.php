@@ -43,7 +43,7 @@ function getGoogleChart($options)
     $option['chxs'] = '0,000000,12,-1|1,000000,12,-1';//(橫線直線的位置)
     $option['chf'] = 'bg,s,FFFFFF|c,s,FFFFFF';//(背景顏色.外面與裡面)
     
-    $option['chm'] = 'N,000000,0,-1,11|s,000000,0,-1,5|s,000000,1,-1,5';
+    $option['chm'] = 'N,000000,0,-1,13|s,000000,0,-1,5';
     
     $option['chg'] = (100/(count($inOption['chxlX'])-1)).',10,10,2,0,0';//
     $option['chts'] = '000000,12';//(上方標題位置與大小)
