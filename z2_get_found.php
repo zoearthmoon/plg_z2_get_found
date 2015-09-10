@@ -231,8 +231,9 @@ class plgSystemZ2_Get_Found extends JPlugin
                 //比對
                 if (isset($nowFData[$year]))
                 {
-                    if ($nowFData[$year]['cost'] != $newFData[$year]['cost'] || $nowFData[$year]['change'] != $newFData[$year]['change'] )
+                    if ($nowFData[$year]['cost'] != $newFData[$year]['cost'])
                     {
+                        $nowFData[$year]['cost'] = $newFData[$year]['cost'];
                         $reNewAdd = TRUE;
                     }
                 }
@@ -291,7 +292,19 @@ class plgSystemZ2_Get_Found extends JPlugin
                 $eHtml .= '<tr>';
                 $eHtml .= '<td colspan="6" >';
                 
+                $mData = array();
+                foreach ($nowFData as $kDate=>$v)
+                {
+                    $mData[$kDate] = $v['cost'];
+                }
+                $mData = array_reverse($mData);
+                $mData = array_slice($mData,-30,30);
+                $imgOP = array(
+                    'title' => urlencode($item['name'].':'.date('m').'月'),
+                    'mData' => $mData,
+                    );
                 //20150903 zoearth 新增圖片
+                $eHtml .= getGoogleChart($imgOP);
                 
                 $eHtml .= '</td>';
                 $eHtml .= '</tr>';
@@ -367,4 +380,65 @@ class plgSystemZ2_Get_Found extends JPlugin
             echo '1';
         }
     }
+}
+
+function getGoogleChart($options)
+{
+    $inOption = array();
+    $inOption['chxtX'] = isset($options['chxtX']) ? $options['chxtX']:750;
+    $inOption['chxtY'] = isset($options['chxtY']) ? $options['chxtY']:350;
+    $option['chs'] = $inOption['chxtX'].'x'.$inOption['chxtY'];
+    
+    //整理資料
+    $max = 0;
+    $min = 999;
+    if (is_array($options['mData']) && count($options['mData']) > 0 )
+    {
+        foreach ($options['mData'] as $date=>$cost)
+        {
+            $max = max($max,$cost);
+            $min = min($min,$cost);
+            $options['chdGo'][]   = $cost;
+            $inOption['chxlX'][] = substr($date,-2,2);
+        }
+    }
+    //$max = (floor($max/10)*10)+10;
+    $max = ceil($max);
+    //$min = (floor($min/10)*10);
+    $min = floor($min);
+    $preY = (($max - $min)/10);
+    for ($sy=$min;$sy<=$max;$sy+=$preY)
+    {
+        $inOption['chxlY'][] = $sy;
+    }
+    
+    //$inOption['chxlX'] = (isset($options['chxlX']) && is_array($options['chxlX'])) ? $options['chxlX']:FALSE;
+    //$inOption['chxlY'] = (isset($options['chxlY']) && is_array($options['chxlY'])) ? $options['chxlY']:FALSE;
+    $option['chxl'] = '';
+    $option['chxl'] .= '0:|'.implode('|',$inOption['chxlX']).'|';//橫線單位
+    $option['chxl'] .= '1:|'.implode('|',$inOption['chxlY']).'';//直線單位
+    
+    //https://chart.googleapis.com/chart?cht=lxy&chs=300x325&chd=t:10,20,40,80,90,95,99|20,30,40,50,60,70,80|-1|5,10,22,35,85&chco2=3072F3,ff0000,00aaaa&chls=2,4,1&chm=s,000000,0,-1,5|s,000000,1,-1,5&chdl=Ponies|Unicorns&chdlp=t&chem=y;s=ec;d=br,cht,p,chd,t:10@,20@,30@,IJKNUWUWYdnswz047977315533zy1246872tnkgcaZQONHCECAAAAEII,chls,3@,6@,3@|5,chs,150x90,chdl,Shire@|Welsh@|Clydesdale,chf,bg@,s@
+    $option['chtt'] = isset($options['title']) ? $options['title']:'test';//(上方標題)
+    $option['chd']  = 't:'.implode(',',$options['chdGo']);//(線樣式)
+    $option['chds'] = $min.','.$max;//(線樣式)
+    $option['chdl'] = urlencode('淨值');//(名稱)
+    $option['chco'] = '5131C9';//(線顏色)
+    $option['chxt'] = 'x,y';//(線顏色)
+    $option['chxs'] = '0,000000,12,-1|1,000000,12,-1';//(橫線直線的位置)
+    $option['chf'] = 'bg,s,FFFFFF|c,s,FFFFFF';//(背景顏色.外面與裡面)
+    
+    $option['chm'] = 'N,000000,0,-1,13|s,000000,0,-1,5';
+    
+    $option['chg'] = (100/(count($inOption['chxlX'])-1)).',10,10,2,0,0';//
+    $option['chts'] = '000000,12';//(上方標題位置與大小)
+    $option['max'] = $max;
+
+    $url = '';
+    foreach ($option as $key=>$v)
+    {
+        $url .= '&'.$key.'='.$v;
+    }
+    
+    return '<img src="https://chart.googleapis.com/chart?cht=ls'.$url.'">';
 }

@@ -55,8 +55,7 @@ function getGoogleChart($options)
         $url .= '&'.$key.'='.$v;
     }
     
-    echo '<img src="https://chart.googleapis.com/chart?cht=ls'.$url.'">';
-    
+    return '<img src="https://chart.googleapis.com/chart?cht=ls'.$url.'">';
 }
 
 $options = array();
