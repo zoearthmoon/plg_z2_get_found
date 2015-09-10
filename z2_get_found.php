@@ -300,7 +300,7 @@ class plgSystemZ2_Get_Found extends JPlugin
                 $mData = array_reverse($mData);
                 $mData = array_slice($mData,-30,30);
                 $imgOP = array(
-                    'title' => urlencode($item['name'].':'.date('m').'月'),
+                    'title' => urlencode($item['name'].':'.date('Y年m月d日')),
                     'mData' => $mData,
                     );
                 //20150903 zoearth 新增圖片
