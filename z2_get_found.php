@@ -239,6 +239,7 @@ class plgSystemZ2_Get_Found extends JPlugin
                 }
                 else
                 {
+                    $nowFData[$year]['cost'] = $newFData[$year]['cost'];
                     $reNewAdd = TRUE;
                 }
                 
