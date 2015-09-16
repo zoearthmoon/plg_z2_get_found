@@ -84,7 +84,7 @@ class plgSystemZ2_Get_Found extends JPlugin
         }
         
         //取得分類
-        $foundDatas = Z2HelperQueryData::getItems(array('category'=>$foundCat[0]));
+        $foundDatas = Z2HelperQueryData::getItems(array('category'=>$foundCat[0],'limit'=>999));
         if (!(is_array($foundDatas) && count($foundDatas) > 0 ))
         {
             $msg = 'ERROR 037 分類沒有項目';
@@ -294,6 +294,7 @@ class plgSystemZ2_Get_Found extends JPlugin
                 $eHtml .= '<td colspan="6" >';
                 
                 $mData = array();
+                krsort($nowFData);
                 foreach ($nowFData as $kDate=>$v)
                 {
                     $mData[$kDate] = $v['cost'];
