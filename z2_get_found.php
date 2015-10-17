@@ -6,6 +6,9 @@ class plgSystemZ2_Get_Found extends JPlugin
 {
     //20150612 zoearth 設定DB(新增需要的表單)
     var $nowDBKey = 1;
+	
+	var $keyDate = array(28,8,18);
+	
     public function setDB()
     {
         static $installSql;
@@ -83,8 +86,8 @@ class plgSystemZ2_Get_Found extends JPlugin
             $this->sendEmail($msg,TRUE);exit();
         }
         
-        //取得分類
-        $foundDatas = Z2HelperQueryData::getItems(array('category'=>$foundCat[0],'limit'=>999));
+        //取得分類.依名稱排序
+        $foundDatas = Z2HelperQueryData::getItems(array('category'=>$foundCat[0],'limit'=>999,'order'=>'title'));
         if (!(is_array($foundDatas) && count($foundDatas) > 0 ))
         {
             $msg = 'ERROR 037 分類沒有項目';
@@ -272,7 +275,18 @@ class plgSystemZ2_Get_Found extends JPlugin
             $todayCost = $newFData[$today]['cost'];
             $todayChange = (($todayCost - $foundBuy)/$foundBuy)*100;
 			
-            if ($todayChange >= $foundMax || $todayChange <= (0 - $foundMin) )
+			/*
+			* 20151017 zoearth 修改條件
+			* 因為基金申購日期為6,16,26
+			* 所以應當要在 28,8,18 日時列出全部富蘭克林基金
+			*/
+			$isKeyDay = FALSE;
+			if (in_array((int)date('d'),$this->keyDate) && strpos(' '.$item['name'],'富蘭克林'))
+			{
+				$isKeyDay = TRUE;
+			}
+			
+            if ($isKeyDay || $todayChange >= $foundMax || $todayChange <= (0 - $foundMin) )
             {
                 $eHtml .= '<tr>';
                 $eHtml .= '<td rowspan="2" >'.$foundKey.'</td>';
@@ -340,7 +354,12 @@ class plgSystemZ2_Get_Found extends JPlugin
         //寄信
         if ($eHtml != '' )
         {
-            $eHtml = '<table border="1" style="width:100%"><tr>
+			$addHtml = '';
+			if (in_array((int)date('d'),$this->keyDate))
+			{
+				$addHtml = '<h2>基金變更提醒日'.date('Y年m月d日').'</h2><br>';
+			}
+            $eHtml = $addHtml.'<table border="1" style="width:100%"><tr>
             <td>代碼</td>
 			<td>基金</td><td>日期</td>
 			<td>目標</td><td>目前</td><td>漲跌</td><td>目標漲跌</td></tr>'.$eHtml.'</table>';
