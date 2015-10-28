@@ -7,7 +7,7 @@ class plgSystemZ2_Get_Found extends JPlugin
     //20150612 zoearth 設定DB(新增需要的表單)
     var $nowDBKey = 1;
 	
-	var $keyDate = array(28,8,18);
+	var $keyDate = array(26,6,16);
 	
     public function setDB()
     {
