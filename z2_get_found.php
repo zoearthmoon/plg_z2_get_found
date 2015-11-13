@@ -132,8 +132,6 @@ class plgSystemZ2_Get_Found extends JPlugin
             
             $foundMax = isset($item['extra_fields']['foundMax']) ? (double)$item['extra_fields']['foundMax']:0;//預設10%
             $foundMin = isset($item['extra_fields']['foundMin']) ? (double)$item['extra_fields']['foundMin']:0;//預設10%
-            $foundMax = $foundMax != 0 ? $foundMax:10;
-            $foundMin = $foundMin != 0 ? $foundMin:10;
             
             $pregRule = isset($item['extra_fields']['pregRule']) ? $item['extra_fields']['pregRule']:1;
             $pregRule = in_array($pregRule,array(1,2,3)) ? $pregRule:1;
