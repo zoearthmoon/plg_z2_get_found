@@ -113,6 +113,20 @@ class plgSystemZ2_Get_Found extends JPlugin
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.0.3705; .NET CLR 1.1.4322)');
         
+        //20160530 zoearth 新增[F] 頂置
+        $newFDatas = array();
+        foreach ($foundDatas as $item)
+        {
+            if (strpos($item['name'],'[F]'))
+            {
+                array_unshift($newFDatas,$item);
+            }
+            else
+            {
+                $newFDatas[] = $item;
+            }
+        }
+        
         $eHtml = '';//信件內容
         foreach ($foundDatas as $item)
         {
@@ -286,21 +300,28 @@ class plgSystemZ2_Get_Found extends JPlugin
 			
             if ($isKeyDay || $todayChange >= $foundMax || $todayChange <= (0 - $foundMin) )
             {
+                //20160530 zoearth 新增[F] TAG
+                $addStyle = '';
+                if (strpos($item['name'],'[F]'))
+                {
+                    $addStyle = ' style="color:#F00;background:#FE0" ';
+                }
+                
                 $eHtml .= '<tr>';
-                $eHtml .= '<td rowspan="2" >'.$foundKey.'</td>';
-                $eHtml .= '<td><a href="'.$foundUrl.'" target="_blank">'.$item['name'].'</a></td>';
-                $eHtml .= '<td>'.$today.'</td>';
-                $eHtml .= '<td>'.$foundBuy.'</td>';
-                $eHtml .= '<td>'.$todayCost.'</td>';
+                $eHtml .= '<td rowspan="2" '.$addStyle.' >'.$foundKey.'</td>';
+                $eHtml .= '<td '.$addStyle.' ><a href="'.$foundUrl.'" target="_blank">'.$item['name'].'</a></td>';
+                $eHtml .= '<td '.$addStyle.' >'.$today.'</td>';
+                $eHtml .= '<td '.$addStyle.' >'.$foundBuy.'</td>';
+                $eHtml .= '<td '.$addStyle.' >'.$todayCost.'</td>';
                 if ($todayChange > 0 )
                 {
-                    $eHtml .= '<td color="#CC0000" ><h2>↑'.number_format($todayChange, 2,'.','').' % </h2></td>';
+                    $eHtml .= '<td color="#CC0000" '.$addStyle.' ><h2>↑'.number_format($todayChange, 2,'.','').' % </h2></td>';
                 }
                 else
                 {
-                    $eHtml .= '<td color="#009933" ><h2>↓'.number_format($todayChange, 2,'.','').' % </h2></td>';
+                    $eHtml .= '<td color="#009933" '.$addStyle.' ><h2>↓'.number_format($todayChange, 2,'.','').' % </h2></td>';
                 }
-				$eHtml .= '<td>漲'.$foundMax.'%/跌'.$foundMin.'%</td>';
+				$eHtml .= '<td '.$addStyle.' >漲'.$foundMax.'%/跌'.$foundMin.'%</td>';
                 $eHtml .= '</tr>';
                 $eHtml .= '<tr>';
                 $eHtml .= '<td colspan="6" >';
